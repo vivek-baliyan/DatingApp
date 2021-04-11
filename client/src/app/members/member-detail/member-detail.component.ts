@@ -5,8 +5,11 @@ import {
   NgxGalleryImage,
   NgxGalleryOptions,
 } from '@kolkov/ngx-gallery';
+import { NgbNav, NgbNavChangeEvent } from '@ng-bootstrap/ng-bootstrap';
 import { Member } from 'src/app/_models/member';
+import { Message } from 'src/app/_models/message';
 import { MembersService } from 'src/app/_services/members.service';
+import { MessageService } from 'src/app/_services/message.service';
 
 @Component({
   selector: 'app-member-detail',
@@ -14,17 +17,27 @@ import { MembersService } from 'src/app/_services/members.service';
   styleUrls: ['./member-detail.component.css'],
 })
 export class MemberDetailComponent implements OnInit {
+  active = 1;
   member: Member;
+  messages: Message[] = [];
   galleryOptions: NgxGalleryOptions[];
   galleryImages: NgxGalleryImage[];
 
   constructor(
     private memberService: MembersService,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private messageService: MessageService
   ) {}
 
   ngOnInit(): void {
-    this.loadMember();
+    this.route.data.subscribe((data) => {
+      this.member = data.member;
+    });
+
+    this.route.queryParams.subscribe((params) => {
+      params.tab ? this.selectTab(4) : this.selectTab(1);
+    });
+
     this.galleryOptions = [
       {
         width: '500px',
@@ -35,7 +48,8 @@ export class MemberDetailComponent implements OnInit {
         preview: false,
       },
     ];
-    
+
+    this.galleryImages = this.getImages();
   }
 
   getImages(): NgxGalleryImage[] {
@@ -50,12 +64,24 @@ export class MemberDetailComponent implements OnInit {
     return imageUrls;
   }
 
-  loadMember() {
-    this.memberService
-      .getMember(this.route.snapshot.paramMap.get('username'))
-      .subscribe((member) => {
-        this.member = member;
-        this.galleryImages = this.getImages();
+  loadMessages() {
+    this.messageService
+      .getMessageThread(this.member.userName)
+      .subscribe((messages) => {
+        this.messages = messages;
       });
+  }
+
+  onNavChange(changeEvent: NgbNavChangeEvent) {
+    if (changeEvent.nextId === 4 && this.messages.length === 0) {
+      this.loadMessages();
+    }
+  }
+
+  selectTab(tabId: number) {
+    this.active = tabId;
+    if (this.messages.length === 0) {
+      this.loadMessages();
+    }
   }
 }
