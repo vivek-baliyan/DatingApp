@@ -8,6 +8,17 @@ img.img-thumbnail {
   border: dotted 3.2px red;
 }
 
-input[type=file]{
-    color: transparent;
+input[type="file"] {
+  color: transparent;
+}
+
+.not-approved {
+  opacity: 0.2;
+}
+.img-wrapper {
+  position: relative;
+}
+.img-text {
+  position: absolute;
+  bottom: 30%;
 }
