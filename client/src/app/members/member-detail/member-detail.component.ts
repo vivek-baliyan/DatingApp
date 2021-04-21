@@ -1,33 +1,44 @@
-import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { Component, OnDestroy, OnInit } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 import {
   NgxGalleryAnimation,
   NgxGalleryImage,
   NgxGalleryOptions,
 } from '@kolkov/ngx-gallery';
-import { NgbNav, NgbNavChangeEvent } from '@ng-bootstrap/ng-bootstrap';
+import { NgbNavChangeEvent } from '@ng-bootstrap/ng-bootstrap';
+import { take } from 'rxjs/operators';
 import { Member } from 'src/app/_models/member';
 import { Message } from 'src/app/_models/message';
-import { MembersService } from 'src/app/_services/members.service';
+import { User } from 'src/app/_models/user';
+import { AccountService } from 'src/app/_services/account.service';
 import { MessageService } from 'src/app/_services/message.service';
+import { PresenceService } from 'src/app/_services/presence.service';
 
 @Component({
   selector: 'app-member-detail',
   templateUrl: './member-detail.component.html',
   styleUrls: ['./member-detail.component.css'],
 })
-export class MemberDetailComponent implements OnInit {
+export class MemberDetailComponent implements OnInit, OnDestroy {
   active = 1;
   member: Member;
   messages: Message[] = [];
   galleryOptions: NgxGalleryOptions[];
   galleryImages: NgxGalleryImage[];
+  user: User;
 
   constructor(
-    private memberService: MembersService,
+    public presence: PresenceService,
     private route: ActivatedRoute,
-    private messageService: MessageService
-  ) {}
+    private messageService: MessageService,
+    private accountService: AccountService,
+    private router: Router
+  ) {
+    this.accountService.currentUser$
+      .pipe(take(1))
+      .subscribe((user) => (this.user = user));
+    this.router.routeReuseStrategy.shouldReuseRoute = () => false;
+  }
 
   ngOnInit(): void {
     this.route.data.subscribe((data) => {
@@ -72,16 +83,27 @@ export class MemberDetailComponent implements OnInit {
       });
   }
 
-  onNavChange(changeEvent: NgbNavChangeEvent) {
-    if (changeEvent.nextId === 4 && this.messages.length === 0) {
-      this.loadMessages();
+  selectTab(tabId: number) {
+    this.active = tabId;
+    // if (this.messages.length === 0) {
+    //   this.loadMessages();
+    // }
+    if (tabId === 4 && this.messages.length === 0) {
+      this.messageService.createHubConnection(this.user, this.member.userName);
+    } else {
+      this.messageService.stopHubConnection();
     }
   }
 
-  selectTab(tabId: number) {
-    this.active = tabId;
-    if (this.messages.length === 0) {
-      this.loadMessages();
+  onNavChange(changeEvent: NgbNavChangeEvent) {
+    if (changeEvent.nextId === 4 && this.messages.length === 0) {
+      this.messageService.createHubConnection(this.user, this.member.userName);
+    } else {
+      this.messageService.stopHubConnection();
     }
+  }
+
+  ngOnDestroy(): void {
+    this.messageService.stopHubConnection();
   }
 }

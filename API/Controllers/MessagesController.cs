@@ -27,7 +27,7 @@ namespace API.Controllers
         [HttpPost]
         public async Task<ActionResult<MessageDto>> CreateMessage(CreateMessageDto createMessageDto)
         {
-            var username = User.GetUserName();
+            var username = User.GetUsername();
             if (username == createMessageDto.RecipientUsername.ToLower())
                 return BadRequest("You cannot send messages to yourself");
 
@@ -55,7 +55,7 @@ namespace API.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<MessageDto>>> GetMessagesForUser([FromQuery] MessageParams messageParams)
         {
-            messageParams.Username = User.GetUserName();
+            messageParams.Username = User.GetUsername();
 
             var messages = await _messageRepository.GetMessagesForUser(messageParams);
 
@@ -67,14 +67,14 @@ namespace API.Controllers
         [HttpGet("thread/{username}")]
         public async Task<ActionResult<IEnumerable<MessageDto>>> GetMessageThread(string username)
         {
-            var currentUsername = User.GetUserName();
+            var currentUsername = User.GetUsername();
             return Ok(await _messageRepository.GetMessageThread(currentUsername, username));
         }
 
         [HttpDelete("{id}")]
         public async Task<ActionResult> DeleteMessage(int id)
         {
-            var username = User.GetUserName();
+            var username = User.GetUsername();
 
             var message = await _messageRepository.GetMessage(id);
 
